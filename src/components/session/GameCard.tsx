@@ -44,6 +44,22 @@ function getPlayersAtPosition(
     .map((a) => ({ playerId: a.playerId, isOverride: false }));
 }
 
+/** Counts unique female players in the effective lineup (overrides applied). */
+function countEffectiveFemale(
+  game: GameLineup,
+  players: Record<string, Player>,
+): number {
+  const overriddenIds = new Set(game.overrides.map((o) => o.playerId));
+  const effectiveIds = new Set([
+    ...game.assignments
+      .filter((a) => !overriddenIds.has(a.playerId))
+      .map((a) => a.playerId),
+    ...game.overrides.map((o) => o.playerId),
+  ]);
+  return [...effectiveIds].filter((id) => players[id]?.gender === 'female')
+    .length;
+}
+
 interface GameCardProps {
   game: GameLineup;
   gameNumber: number;
@@ -67,6 +83,7 @@ export function GameCard({
   const positionsToShow = DISPLAY_ORDER.filter(
     (p) => p !== 'libero' || game.hasLibero,
   );
+  const femaleCount = countEffectiveFemale(game, players);
 
   function openOverride(position: Position) {
     const current = getPlayersAtPosition(game, position);
@@ -112,6 +129,16 @@ export function GameCard({
             Libero
           </span>
         )}
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+            femaleCount < 2
+              ? 'bg-destructive/10 text-destructive'
+              : 'bg-muted text-muted-foreground'
+          }`}
+          title={femaleCount < 2 ? 'Fewer than 2 female players' : undefined}
+        >
+          F:{femaleCount}
+        </span>
         {game.overrides.length > 0 && (
           <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             {game.overrides.length} override
