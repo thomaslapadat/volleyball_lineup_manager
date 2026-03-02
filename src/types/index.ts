@@ -1,6 +1,23 @@
 // ─── Primitives ─────────────────────────────────────────────────────────────
 
-export type Position = 'setter' | 'opposite' | 'power' | 'middle' | 'libero';
+export type Position =
+  | 'setter'
+  | 'opposite'
+  | 'power1'
+  | 'power2'
+  | 'middle1'
+  | 'middle2'
+  | 'libero';
+
+/** All primary (non-libero) positions in front-row → back-row court order. */
+export const PRIMARY_POSITIONS: Position[] = [
+  'middle1',
+  'power1',
+  'setter',
+  'opposite',
+  'power2',
+  'middle2',
+];
 
 // ─── Player ──────────────────────────────────────────────────────────────────
 
@@ -8,6 +25,7 @@ export interface Player {
   id: string; // crypto.randomUUID()
   name: string;
   gender: 'male' | 'female' | 'other';
+  color: string; // hex, auto-assigned on creation
 }
 
 // ─── League ──────────────────────────────────────────────────────────────────
@@ -48,6 +66,7 @@ export interface Assignment {
   playerId: string;
   position: Position;
   isSharing: boolean; // true for the middle who shares a slot with a libero
+  isLocked?: boolean; // when true: position cannot be changed by drag or reroll
 }
 
 export interface Override {

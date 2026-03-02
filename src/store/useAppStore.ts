@@ -3,6 +3,21 @@ import type { AppState, League, LeaguePlayer, Player, Session } from '@/types';
 
 const STORAGE_KEY = 'volleyball_app_state';
 
+const PLAYER_COLORS = [
+  '#ef4444', // red
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#14b8a6', // teal
+  '#3b82f6', // blue
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#f59e0b', // amber
+  '#84cc16', // lime
+  '#6366f1', // indigo
+];
+
 const initialState: AppState = {
   players: {},
   leagues: {},
@@ -59,8 +74,10 @@ export const useAppStore = create<AppStore>((set) => ({
 
   addPlayer: (name, gender) => {
     const id = crypto.randomUUID();
+    const color =
+      PLAYER_COLORS[Math.floor(Math.random() * PLAYER_COLORS.length)];
     set((state) => ({
-      players: { ...state.players, [id]: { id, name, gender } },
+      players: { ...state.players, [id]: { id, name, gender, color } },
     }));
   },
 
