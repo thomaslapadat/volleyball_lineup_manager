@@ -68,19 +68,22 @@ function selectPrimary(
 }
 
 /**
- * Generates lineups for every game in the session, filling only the empty
- * primary position slots. Slots that already have a manual assignment are
- * left untouched. The libero overlay is handled separately and is never
- * assigned here.
+ * Generates lineups for every game in the session.
  *
- * - Locked-in players always appear first in the candidate pool.
- * - Male players are capped (female + other fill slots first).
- * - Position assignment is random among the empty slots.
+ * When `clearFirst` is false (default / "fill" mode): only empty primary
+ * position slots are filled; existing assignments are preserved.
+ *
+ * When `clearFirst` is true ("reroll" mode): all non-locked assignments are
+ * cleared first, then the full set of primary slots is filled fresh.
+ *
+ * Locked positions (Assignment.isLocked = true) are never touched by either
+ * mode. The libero overlay is handled separately and is never assigned here.
  */
 export function generateLineups(
   session: Session,
   league: League,
   players: Record<string, Player>,
+  clearFirst = false,
 ): GameLineup[] {
   if (session.attendees.length === 0) return session.games;
 
@@ -93,17 +96,24 @@ export function generateLineups(
   const ordered = [...lockedIn, ...regular];
 
   return session.games.map((game) => {
+    // In reroll mode keep only locked assignments; otherwise keep everything.
+    const baseAssignments = clearFirst
+      ? game.assignments.filter((a) => a.isLocked)
+      : game.assignments;
+
     const existingPositions = new Set<Position>(
-      game.assignments.map((a) => a.position),
+      baseAssignments.map((a) => a.position),
     );
     const existingPlayerIds = new Set<string>(
-      game.assignments.map((a) => a.playerId),
+      baseAssignments.map((a) => a.playerId),
     );
 
     const emptySlots = PRIMARY_POSITIONS.filter(
       (p) => !existingPositions.has(p),
     );
-    if (emptySlots.length === 0) return game;
+    if (emptySlots.length === 0) {
+      return { ...game, assignments: baseAssignments };
+    }
 
     const availableCandidates = ordered.filter(
       (id) => !existingPlayerIds.has(id),
@@ -127,7 +137,7 @@ export function generateLineups(
 
     return {
       ...game,
-      assignments: [...game.assignments, ...newAssignments],
+      assignments: [...baseAssignments, ...newAssignments],
     };
   });
 }

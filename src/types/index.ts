@@ -66,6 +66,7 @@ export interface Assignment {
   playerId: string;
   position: Position;
   isSharing: boolean; // true for the middle who shares a slot with a libero
+  isLocked?: boolean; // when true: position cannot be changed by drag or reroll
 }
 
 export interface Override {

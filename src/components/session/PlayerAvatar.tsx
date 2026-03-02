@@ -13,6 +13,7 @@ function getInitials(name: string): string {
 const SIZE_CLASSES = {
   sm: 'w-10 h-10 text-xs',
   md: 'w-9 h-9 text-xs',
+  lg: 'w-14 h-14 text-sm',
 } as const;
 
 interface PlayerAvatarProps {

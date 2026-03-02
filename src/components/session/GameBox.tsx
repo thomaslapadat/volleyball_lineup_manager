@@ -18,9 +18,15 @@ interface GameBoxProps {
   game: GameLineup;
   gameNumber: number;
   players: Record<string, Player>;
+  onToggleLock: (position: Position) => void;
 }
 
-export function GameBox({ game, gameNumber, players }: GameBoxProps) {
+export function GameBox({
+  game,
+  gameNumber,
+  players,
+  onToggleLock,
+}: GameBoxProps) {
   const {
     attributes,
     listeners,
@@ -36,9 +42,17 @@ export function GameBox({ game, gameNumber, players }: GameBoxProps) {
     opacity: isDragging ? 0.4 : 1,
   };
 
+  function assignmentAt(position: Position) {
+    return game.assignments.find((a) => a.position === position);
+  }
+
   function playerAt(position: Position): Player | undefined {
-    const assignment = game.assignments.find((a) => a.position === position);
-    return assignment ? players[assignment.playerId] : undefined;
+    const a = assignmentAt(position);
+    return a ? players[a.playerId] : undefined;
+  }
+
+  function isLockedAt(position: Position): boolean {
+    return assignmentAt(position)?.isLocked === true;
   }
 
   return (
@@ -62,16 +76,18 @@ export function GameBox({ game, gameNumber, players }: GameBoxProps) {
       </div>
 
       {/* Position grid */}
-      <div className="px-4 py-4 space-y-3">
+      <div className="px-6 py-5 space-y-5">
         {LAYOUT.map((row, rowIdx) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: stable layout rows
-          <div key={rowIdx} className="flex justify-around">
+          <div key={rowIdx} className="flex justify-center gap-6">
             {row.map((position) => (
               <PositionCircle
                 key={position}
                 position={position}
                 gameId={game.id}
                 player={playerAt(position)}
+                isLocked={isLockedAt(position)}
+                onToggleLock={() => onToggleLock(position)}
               />
             ))}
           </div>
