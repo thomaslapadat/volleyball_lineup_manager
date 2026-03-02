@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
+import { LeagueDetailPage } from '@/pages/LeagueDetailPage';
 import { LeaguesPage } from '@/pages/LeaguesPage';
 import { PlayersPage } from '@/pages/PlayersPage';
 import { SessionPage } from '@/pages/SessionPage';
@@ -12,6 +13,7 @@ export default function App() {
           <Route index element={<Navigate to="/players" replace />} />
           <Route path="/players" element={<PlayersPage />} />
           <Route path="/leagues" element={<LeaguesPage />} />
+          <Route path="/leagues/:leagueId" element={<LeagueDetailPage />} />
           <Route
             path="/leagues/:leagueId/session/:sessionId"
             element={<SessionPage />}
