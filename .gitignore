@@ -48,3 +48,9 @@ __pycache__/
 venv/
 build/
 
+# AI tooling & WAT framework (local dev only)
+CLAUDE.md
+.mcp.json
+tools/
+workflows/
+
