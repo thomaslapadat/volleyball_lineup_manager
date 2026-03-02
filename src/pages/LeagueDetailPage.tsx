@@ -23,16 +23,20 @@ function formatDate(dateStr: string): string {
 const POSITION_LABELS: Record<Position, string> = {
   setter: 'Set',
   opposite: 'Opp',
-  power: 'Pow',
-  middle: 'Mid',
+  power1: 'P1',
+  power2: 'P2',
+  middle1: 'M1',
+  middle2: 'M2',
   libero: 'Lib',
 };
 
 const ALL_POSITIONS: Position[] = [
   'setter',
   'opposite',
-  'power',
-  'middle',
+  'power1',
+  'power2',
+  'middle1',
+  'middle2',
   'libero',
 ];
 
@@ -57,22 +61,25 @@ export function LeagueDetailPage() {
     );
   }
 
-  const rosterEntries = Object.values(league.roster);
-  const sessionList = Object.values(league.sessions).sort((a, b) =>
+  // Narrowed ref so closures below see a non-undefined type
+  const currentLeague = league;
+
+  const rosterEntries = Object.values(currentLeague.roster);
+  const sessionList = Object.values(currentLeague.sessions).sort((a, b) =>
     b.date.localeCompare(a.date),
   );
 
   function togglePreference(playerId: string, position: Position) {
-    const current = league!.roster[playerId].preferences;
+    const current = currentLeague.roster[playerId].preferences;
     const next = current.includes(position)
       ? current.filter((p) => p !== position)
       : [...current, position];
-    updateLeaguePlayer(league!.id, playerId, { preferences: next });
+    updateLeaguePlayer(currentLeague.id, playerId, { preferences: next });
   }
 
   function toggleLockedIn(playerId: string) {
-    const current = league!.roster[playerId].lockedIn;
-    updateLeaguePlayer(league!.id, playerId, { lockedIn: !current });
+    const current = currentLeague.roster[playerId].lockedIn;
+    updateLeaguePlayer(currentLeague.id, playerId, { lockedIn: !current });
   }
 
   return (
@@ -86,7 +93,7 @@ export function LeagueDetailPage() {
         >
           <ArrowLeftIcon />
         </Button>
-        <h1 className="text-2xl font-semibold">{league.name}</h1>
+        <h1 className="text-2xl font-semibold">{currentLeague.name}</h1>
       </div>
 
       <div className="mt-6 flex items-center justify-between">
@@ -150,7 +157,9 @@ export function LeagueDetailPage() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => removePlayerFromLeague(league.id, playerId)}
+                  onClick={() =>
+                    removePlayerFromLeague(currentLeague.id, playerId)
+                  }
                   aria-label={`Remove ${player.name} from roster`}
                   className="text-muted-foreground hover:text-destructive"
                 >
@@ -170,7 +179,7 @@ export function LeagueDetailPage() {
           </h2>
           <Button
             size="sm"
-            onClick={() => navigate(`/leagues/${league.id}/session/new`)}
+            onClick={() => navigate(`/leagues/${currentLeague.id}/session/new`)}
           >
             <CalendarIcon />
             New session
@@ -191,7 +200,9 @@ export function LeagueDetailPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(`/leagues/${league.id}/session/${session.id}`)
+                    navigate(
+                      `/leagues/${currentLeague.id}/session/${session.id}`,
+                    )
                   }
                   className="flex flex-1 flex-wrap items-center gap-2 text-left"
                 >
@@ -209,7 +220,7 @@ export function LeagueDetailPage() {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  onClick={() => deleteSession(league.id, session.id)}
+                  onClick={() => deleteSession(currentLeague.id, session.id)}
                   aria-label={`Delete session ${formatDate(session.date)}`}
                   className="text-muted-foreground hover:text-destructive"
                 >

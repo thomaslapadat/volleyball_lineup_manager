@@ -6,25 +6,7 @@ import type {
   Position,
   Session,
 } from '@/types';
-
-// Position slots for a standard 6-player game
-const SLOTS_NO_LIBERO: Position[] = [
-  'setter',
-  'opposite',
-  'middle',
-  'middle',
-  'power',
-  'power',
-];
-
-const SLOTS_WITH_LIBERO: Position[] = [
-  'setter',
-  'opposite',
-  'middle',
-  'power',
-  'power',
-  'libero',
-];
+import { PRIMARY_POSITIONS } from '@/types';
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -36,14 +18,13 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 /**
- * Selects the primary players (those assigned a unique slot, not sharing).
+ * Selects players to fill available slots from the candidate pool.
  *
  * Rules applied in order:
  * 1. Locked-in players always play.
- * 2. Male players are capped at `maxMale` (female + other are treated as
- *    non-male and fill slots freely). Any male players beyond the cap are
- *    deferred until all non-male players have been considered.
- * 3. Remaining slots filled randomly from the deferred male pool if needed.
+ * 2. Male players are capped at `maxMale` (female + other fill freely).
+ *    Any male players beyond the cap are deferred.
+ * 3. Remaining slots filled from the deferred male pool if needed.
  */
 function selectPrimary(
   candidates: string[],
@@ -78,8 +59,6 @@ function selectPrimary(
     }
   }
 
-  // If there are still open slots (not enough non-male players), fill with
-  // deferred males rather than leaving slots empty.
   for (const id of deferredMale) {
     if (primary.length >= slotCount) break;
     primary.push(id);
@@ -89,13 +68,14 @@ function selectPrimary(
 }
 
 /**
- * Generates lineups for every game in the session.
+ * Generates lineups for every game in the session, filling only the empty
+ * primary position slots. Slots that already have a manual assignment are
+ * left untouched. The libero overlay is handled separately and is never
+ * assigned here.
  *
- * - Locked-in players always appear in the primary lineup.
+ * - Locked-in players always appear first in the candidate pool.
  * - Male players are capped (female + other fill slots first).
- * - Position assignment is random: primary players are shuffled and mapped
- *   directly to slots.
- * - When more than 6 players attend, extras share positions cyclically.
+ * - Position assignment is random among the empty slots.
  */
 export function generateLineups(
   session: Session,
@@ -104,8 +84,6 @@ export function generateLineups(
 ): GameLineup[] {
   if (session.attendees.length === 0) return session.games;
 
-  // Locked-in first, then shuffled regular — stable across games in the
-  // session so playtime is distributed evenly.
   const lockedIn = session.attendees.filter(
     (id) => league.roster[id]?.lockedIn,
   );
@@ -115,31 +93,41 @@ export function generateLineups(
   const ordered = [...lockedIn, ...regular];
 
   return session.games.map((game) => {
-    const slots = game.hasLibero ? SLOTS_WITH_LIBERO : SLOTS_NO_LIBERO;
+    const existingPositions = new Set<Position>(
+      game.assignments.map((a) => a.position),
+    );
+    const existingPlayerIds = new Set<string>(
+      game.assignments.map((a) => a.playerId),
+    );
 
-    const primary = selectPrimary(ordered, slots.length, players, league);
-    const bench = ordered.filter((id) => !primary.includes(id));
+    const emptySlots = PRIMARY_POSITIONS.filter(
+      (p) => !existingPositions.has(p),
+    );
+    if (emptySlots.length === 0) return game;
 
-    // Shuffle primary for random position assignment, then map to slots
-    const shuffledPrimary = shuffle(primary);
-    const willShare = bench.length > 0;
-    const primaryAssignments: Assignment[] = shuffledPrimary.map((id, i) => ({
-      playerId: id,
-      position: slots[i],
-      isSharing: willShare,
-    }));
+    const availableCandidates = ordered.filter(
+      (id) => !existingPlayerIds.has(id),
+    );
 
-    // Bench players share slots cyclically
-    const benchAssignments: Assignment[] = bench.map((id, i) => ({
-      playerId: id,
-      position: slots[i % slots.length],
-      isSharing: true,
-    }));
+    const selected = selectPrimary(
+      availableCandidates,
+      emptySlots.length,
+      players,
+      league,
+    );
+    const shuffled = shuffle(selected);
+
+    const newAssignments: Assignment[] = emptySlots
+      .map((pos, i) =>
+        shuffled[i] !== undefined
+          ? { playerId: shuffled[i], position: pos, isSharing: false }
+          : null,
+      )
+      .filter((a): a is Assignment => a !== null);
 
     return {
       ...game,
-      assignments: [...primaryAssignments, ...benchAssignments],
-      overrides: [],
+      assignments: [...game.assignments, ...newAssignments],
     };
   });
 }

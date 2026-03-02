@@ -1,21 +1,28 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import {
+  DndContext,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+} from '@dnd-kit/sortable';
 import { ArrowLeftIcon, RefreshCwIcon, ZapIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { GameCard } from '@/components/session/GameCard';
+import { AttendeePanel } from '@/components/session/AttendeePanel';
+import { GameBox } from '@/components/session/GameBox';
+import { PlayerAvatar } from '@/components/session/PlayerAvatar';
 import { Button } from '@/components/ui/button';
 import { generateLineups } from '@/lib/generator';
 import { computePlaytimeSummaries } from '@/lib/playtime';
 import { useAppStore } from '@/store/useAppStore';
-import type { GameLineup } from '@/types';
-
-const containerVariants = {
-  show: { transition: { staggerChildren: 0.07 } },
-};
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
-};
+import type { GameLineup, Position } from '@/types';
 
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -44,6 +51,14 @@ export function SessionPage() {
   const playersMap = useAppStore((s) => s.players);
   const saveSession = useAppStore((s) => s.saveSession);
 
+  const [activeDragPlayerId, setActiveDragPlayerId] = useState<string | null>(
+    null,
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
+
   if (!league || !session) {
     return (
       <div className="mt-8 text-center text-sm text-muted-foreground">
@@ -52,12 +67,16 @@ export function SessionPage() {
     );
   }
 
-  // Narrowed refs so closures below see non-undefined types
   const currentLeague = league;
   const currentSession = session;
 
   const hasLineups = currentSession.games.some((g) => g.assignments.length > 0);
   const summaries = hasLineups ? computePlaytimeSummaries(currentSession) : [];
+
+  // Player IDs that currently occupy a slot in any game
+  const assignedPlayerIds = new Set<string>(
+    currentSession.games.flatMap((g) => g.assignments.map((a) => a.playerId)),
+  );
 
   function handleGenerate() {
     const updatedGames = generateLineups(
@@ -68,15 +87,68 @@ export function SessionPage() {
     saveSession({ ...currentSession, games: updatedGames });
   }
 
-  function handleUpdateGame(updatedGame: GameLineup) {
-    const games = currentSession.games.map((g) =>
-      g.id === updatedGame.id ? updatedGame : g,
-    );
-    saveSession({ ...currentSession, games });
+  function handleDragStart(event: DragStartEvent) {
+    const data = event.active.data.current;
+    if (data?.type === 'attendee') {
+      setActiveDragPlayerId(data.playerId as string);
+    }
   }
 
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveDragPlayerId(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    if (activeData?.type === 'attendee' && overData?.type === 'slot') {
+      const playerId = activeData.playerId as string;
+      const gameId = overData.gameId as string;
+      const position = overData.position as Position;
+
+      const games = currentSession.games.map((g) => {
+        if (g.id !== gameId) return g;
+        // Remove any existing assignment at the target position and any
+        // existing assignment for this player (one slot per player per game)
+        const filtered = g.assignments.filter(
+          (a) => a.position !== position && a.playerId !== playerId,
+        );
+        return {
+          ...g,
+          assignments: [...filtered, { playerId, position, isSharing: false }],
+        };
+      });
+      saveSession({ ...currentSession, games });
+      return;
+    }
+
+    if (activeData?.type === 'game' && overData?.type === 'game') {
+      const oldIndex = currentSession.games.findIndex(
+        (g) => g.id === String(active.id),
+      );
+      const newIndex = currentSession.games.findIndex(
+        (g) => g.id === String(over.id),
+      );
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        saveSession({
+          ...currentSession,
+          games: arrayMove(currentSession.games, oldIndex, newIndex),
+        });
+      }
+    }
+  }
+
+  const activeDragPlayer = activeDragPlayerId
+    ? playersMap[activeDragPlayerId]
+    : null;
+
   return (
-    <div>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       {/* Header */}
       <div className="flex items-start gap-3">
         <Button
@@ -95,11 +167,11 @@ export function SessionPage() {
         </div>
       </div>
 
-      {/* Generate / Regenerate */}
-      <div className="mt-6 flex items-center gap-3">
+      {/* Generate button */}
+      <div className="mt-4 flex items-center gap-3">
         <Button onClick={handleGenerate}>
           {hasLineups ? <RefreshCwIcon /> : <ZapIcon />}
-          {hasLineups ? 'Regenerate' : 'Generate lineups'}
+          {hasLineups ? 'Fill remaining slots' : 'Generate lineups'}
         </Button>
         {hasLineups && (
           <span className="text-xs text-muted-foreground">
@@ -109,29 +181,37 @@ export function SessionPage() {
         )}
       </div>
 
-      {/* Game cards (staggered in) */}
-      {hasLineups && (
-        <AnimatePresence>
-          <motion.div
-            className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
+      {/* Main layout: attendees left, games right */}
+      <div className="mt-6 flex gap-6 items-start">
+        {/* Attendees panel */}
+        <div className="w-52 shrink-0 rounded-lg border border-border overflow-hidden">
+          <AttendeePanel
+            attendees={currentSession.attendees}
+            players={playersMap}
+            summaries={summaries}
+            assignedPlayerIds={assignedPlayerIds}
+          />
+        </div>
+
+        {/* Games grid */}
+        <div className="flex-1 min-w-0">
+          <SortableContext
+            items={currentSession.games.map((g) => g.id)}
+            strategy={rectSortingStrategy}
           >
-            {currentSession.games.map((game, i) => (
-              <motion.div key={game.id} variants={cardVariants}>
-                <GameCard
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {currentSession.games.map((game: GameLineup, i: number) => (
+                <GameBox
+                  key={game.id}
                   game={game}
                   gameNumber={i + 1}
-                  attendees={currentSession.attendees}
                   players={playersMap}
-                  onUpdateGame={handleUpdateGame}
                 />
-              </motion.div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
-      )}
+              ))}
+            </div>
+          </SortableContext>
+        </div>
+      </div>
 
       {/* Playtime summary */}
       {hasLineups && summaries.length > 0 && (
@@ -175,6 +255,13 @@ export function SessionPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* Drag overlay — avatar shown under cursor while dragging an attendee */}
+      <DragOverlay dropAnimation={null}>
+        {activeDragPlayer ? (
+          <PlayerAvatar player={activeDragPlayer} size="md" />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
