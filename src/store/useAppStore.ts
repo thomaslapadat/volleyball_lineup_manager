@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import type { AppState, League, LeaguePlayer, Player, Session } from '@/types';
+import type {
+  AppState,
+  League,
+  LeaguePlayer,
+  Player,
+  Session,
+  UiSettings,
+} from '@/types';
 
 const STORAGE_KEY = 'volleyball_app_state';
 
@@ -18,7 +25,14 @@ const PLAYER_COLORS = [
   '#6366f1', // indigo
 ];
 
+function getSystemTheme(): UiSettings['theme'] {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
+}
+
 const initialState: AppState = {
+  uiSettings: { theme: getSystemTheme() },
   players: {},
   leagues: {},
 };
@@ -27,7 +41,9 @@ function loadFromStorage(): AppState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initialState;
-    return JSON.parse(raw) as AppState;
+    // Merge so that new fields (e.g. uiSettings) fall back to defaults if absent.
+    const stored = JSON.parse(raw) as Partial<AppState>;
+    return { ...initialState, ...stored };
   } catch {
     return initialState;
   }
@@ -36,6 +52,9 @@ function loadFromStorage(): AppState {
 // ─── Action Signatures ────────────────────────────────────────────────────────
 
 interface AppActions {
+  // Theme
+  setTheme: (theme: UiSettings['theme']) => void;
+
   // Players
   addPlayer: (name: string, gender: Player['gender']) => void;
   updatePlayer: (
@@ -54,7 +73,7 @@ interface AppActions {
   updateLeaguePlayer: (
     leagueId: string,
     playerId: string,
-    patch: Partial<Pick<LeaguePlayer, 'preferences' | 'lockedIn'>>,
+    patch: Partial<Pick<LeaguePlayer, 'preferences'>>,
   ) => void;
   removePlayerFromLeague: (leagueId: string, playerId: string) => void;
 
@@ -69,6 +88,11 @@ type AppStore = AppState & AppActions;
 
 export const useAppStore = create<AppStore>((set) => ({
   ...loadFromStorage(),
+
+  // ─── Theme ────────────────────────────────────────────────────────────────
+
+  setTheme: (theme) =>
+    set((state) => ({ uiSettings: { ...state.uiSettings, theme } })),
 
   // ─── Players ──────────────────────────────────────────────────────────────
 
@@ -136,7 +160,7 @@ export const useAppStore = create<AppStore>((set) => ({
           ...state.leagues[leagueId],
           roster: {
             ...state.leagues[leagueId].roster,
-            [playerId]: { playerId, preferences: [], lockedIn: false },
+            [playerId]: { playerId, preferences: [] },
           },
         },
       },
@@ -200,12 +224,26 @@ export const useAppStore = create<AppStore>((set) => ({
     }),
 }));
 
-// ─── Persistence ──────────────────────────────────────────────────────────────
+// ─── Persistence & Theme Sync ─────────────────────────────────────────────────
 
-// Write only the data shape (not actions) to localStorage on every state change.
 useAppStore.subscribe((state) => {
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({ players: state.players, leagues: state.leagues }),
+    JSON.stringify({
+      uiSettings: state.uiSettings,
+      players: state.players,
+      leagues: state.leagues,
+    }),
+  );
+  // Keep the <html> class in sync with the stored theme.
+  document.documentElement.classList.toggle(
+    'dark',
+    state.uiSettings.theme === 'dark',
   );
 });
+
+// Apply theme immediately on load, before React's first render.
+document.documentElement.classList.toggle(
+  'dark',
+  useAppStore.getState().uiSettings.theme === 'dark',
+);

@@ -80,12 +80,7 @@ export function SessionPage() {
   const summaries = computePlaytimeSummaries(currentSession);
 
   function handleReroll() {
-    const updatedGames = generateLineups(
-      currentSession,
-      currentLeague,
-      playersMap,
-      true,
-    );
+    const updatedGames = generateLineups(currentSession, playersMap, true);
     saveSession({ ...currentSession, games: updatedGames });
   }
 

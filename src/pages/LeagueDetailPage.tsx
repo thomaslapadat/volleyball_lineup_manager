@@ -77,11 +77,6 @@ export function LeagueDetailPage() {
     updateLeaguePlayer(currentLeague.id, playerId, { preferences: next });
   }
 
-  function toggleLockedIn(playerId: string) {
-    const current = currentLeague.roster[playerId].lockedIn;
-    updateLeaguePlayer(currentLeague.id, playerId, { lockedIn: !current });
-  }
-
   return (
     <div>
       <div className="flex items-center gap-3">
@@ -112,7 +107,7 @@ export function LeagueDetailPage() {
         </p>
       ) : (
         <ul className="mt-3 divide-y divide-border rounded-lg border border-border">
-          {rosterEntries.map(({ playerId, preferences, lockedIn }) => {
+          {rosterEntries.map(({ playerId, preferences }) => {
             const player = playersMap[playerId];
             if (!player) return null;
             return (
@@ -143,16 +138,6 @@ export function LeagueDetailPage() {
                     );
                   })}
                 </div>
-
-                <label className="flex cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={lockedIn}
-                    onChange={() => toggleLockedIn(playerId)}
-                    className="accent-primary"
-                  />
-                  Locked
-                </label>
 
                 <Button
                   variant="ghost"

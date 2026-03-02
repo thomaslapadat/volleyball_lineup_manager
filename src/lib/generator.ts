@@ -1,7 +1,6 @@
 import type {
   Assignment,
   GameLineup,
-  League,
   Player,
   Position,
   Session,
@@ -21,28 +20,23 @@ function shuffle<T>(arr: T[]): T[] {
  * Selects players to fill available slots from the candidate pool.
  *
  * Rules applied in order:
- * 1. Locked-in players always play.
- * 2. Male players are capped at `maxMale` (female + other fill freely).
+ * 1. Male players are capped at `maxMale` (female + other fill freely).
  *    Any male players beyond the cap are deferred.
- * 3. Remaining slots filled from the deferred male pool if needed.
+ * 2. Remaining slots filled from the deferred male pool if needed.
  */
 function selectPrimary(
   candidates: string[],
   slotCount: number,
   players: Record<string, Player>,
-  league: League,
   maxMale = 4,
 ): string[] {
   if (candidates.length <= slotCount) return [...candidates];
 
   const isMale = (id: string) => players[id]?.gender === 'male';
-  const isLocked = (id: string) => league.roster[id]?.lockedIn ?? false;
+  const available = shuffle(candidates);
 
-  const locked = candidates.filter(isLocked);
-  const available = shuffle(candidates.filter((id) => !isLocked(id)));
-
-  const primary = [...locked];
-  let maleCount = primary.filter((id) => isMale(id)).length;
+  const primary: string[] = [];
+  let maleCount = 0;
   const deferredMale: string[] = [];
 
   for (const id of available) {
@@ -81,19 +75,12 @@ function selectPrimary(
  */
 export function generateLineups(
   session: Session,
-  league: League,
   players: Record<string, Player>,
   clearFirst = false,
 ): GameLineup[] {
   if (session.attendees.length === 0) return session.games;
 
-  const lockedIn = session.attendees.filter(
-    (id) => league.roster[id]?.lockedIn,
-  );
-  const regular = shuffle(
-    session.attendees.filter((id) => !league.roster[id]?.lockedIn),
-  );
-  const ordered = [...lockedIn, ...regular];
+  const ordered = shuffle(session.attendees);
 
   return session.games.map((game) => {
     // In reroll mode keep only locked assignments; otherwise keep everything.
@@ -123,7 +110,6 @@ export function generateLineups(
       availableCandidates,
       emptySlots.length,
       players,
-      league,
     );
     const shuffled = shuffle(selected);
 

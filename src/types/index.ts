@@ -33,7 +33,6 @@ export interface Player {
 export interface LeaguePlayer {
   playerId: string;
   preferences: Position[]; // ordered most → least preferred; may be empty
-  lockedIn: boolean; // always assign top preference when true
 }
 
 export interface League {
@@ -74,9 +73,16 @@ export interface Override {
   position: Position;
 }
 
+// ─── UI Settings ─────────────────────────────────────────────────────────────
+
+export interface UiSettings {
+  theme: 'light' | 'dark';
+}
+
 // ─── App State ───────────────────────────────────────────────────────────────
 
 export interface AppState {
+  uiSettings: UiSettings;
   players: Record<string, Player>; // keyed by player ID
   leagues: Record<string, League>; // keyed by league ID
 }

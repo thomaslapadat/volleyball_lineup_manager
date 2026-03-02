@@ -1,3 +1,4 @@
+import { MoonIcon, SunIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -18,9 +19,12 @@ export function Navbar() {
   const [pendingImport, setPendingImport] = useState<AppState | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
+  const theme = useAppStore((s) => s.uiSettings.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
+
   function handleExport() {
-    const { players, leagues } = useAppStore.getState();
-    exportState({ players, leagues });
+    const { players, leagues, uiSettings } = useAppStore.getState();
+    exportState({ players, leagues, uiSettings });
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -39,6 +43,7 @@ export function Navbar() {
     useAppStore.setState({
       players: pendingImport.players,
       leagues: pendingImport.leagues,
+      uiSettings: pendingImport.uiSettings ?? useAppStore.getState().uiSettings,
     });
     setPendingImport(null);
   }
@@ -76,7 +81,7 @@ export function Navbar() {
             Leagues
           </NavLink>
 
-          <div className="ml-2 flex gap-2">
+          <div className="ml-2 flex items-center gap-2">
             <input
               ref={fileInputRef}
               type="file"
@@ -93,6 +98,14 @@ export function Navbar() {
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               Export
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Toggle theme"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
+              {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
             </Button>
           </div>
         </div>

@@ -185,7 +185,6 @@ export function SessionSetupPage() {
             <ul className="divide-y divide-border rounded-lg border border-border">
               {rosterPlayers.map((player) => {
                 const isAttending = attendees.has(player.id);
-                const isLocked = league.roster[player.id]?.lockedIn;
                 return (
                   <li key={player.id}>
                     <label className="flex cursor-pointer items-center gap-3 px-4 py-2.5">
@@ -198,11 +197,6 @@ export function SessionSetupPage() {
                       <span className="flex-1 text-sm font-medium">
                         {player.name}
                       </span>
-                      {isLocked && (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                          Locked
-                        </span>
-                      )}
                     </label>
                   </li>
                 );
