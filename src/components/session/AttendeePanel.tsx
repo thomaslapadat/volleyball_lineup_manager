@@ -43,9 +43,9 @@ interface AttendeeRowProps {
 
 function AttendeeRow({ player }: AttendeeRowProps) {
   return (
-    <li className="flex items-center gap-2.5 px-3 py-2">
+    <li className="flex items-center gap-2.5 px-3 py-2 min-h-[52px]">
       <DraggableAvatar player={player} />
-      <span className="flex-1 min-w-0 text-sm font-medium truncate">
+      <span className="flex-1 min-w-0 text-sm font-medium break-words">
         {player.name}
       </span>
       <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">

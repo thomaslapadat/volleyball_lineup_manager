@@ -185,12 +185,27 @@ export const useAppStore = create<AppStore>((set) => ({
 
   removePlayerFromLeague: (leagueId, playerId) =>
     set((state) => {
-      const roster = { ...state.leagues[leagueId].roster };
+      const league = state.leagues[leagueId];
+      const roster = { ...league.roster };
       delete roster[playerId];
+
+      // Remove player from all sessions in this league
+      const sessions: League['sessions'] = {};
+      for (const [sid, session] of Object.entries(league.sessions)) {
+        sessions[sid] = {
+          ...session,
+          attendees: session.attendees.filter((id) => id !== playerId),
+          games: session.games.map((g) => ({
+            ...g,
+            assignments: g.assignments.filter((a) => a.playerId !== playerId),
+          })),
+        };
+      }
+
       return {
         leagues: {
           ...state.leagues,
-          [leagueId]: { ...state.leagues[leagueId], roster },
+          [leagueId]: { ...league, roster, sessions },
         },
       };
     }),

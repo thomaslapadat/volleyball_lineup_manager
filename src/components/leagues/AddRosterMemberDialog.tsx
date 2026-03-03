@@ -25,21 +25,34 @@ export function AddRosterMemberDialog({
 }: AddRosterMemberDialogProps) {
   const playersMap = useAppStore((s) => s.players);
   const addPlayerToLeague = useAppStore((s) => s.addPlayerToLeague);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const available = Object.values(playersMap).filter(
     (p) => !(p.id in league.roster),
   );
 
+  function togglePlayer(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
   function handleAdd() {
-    if (!selectedId) return;
-    addPlayerToLeague(league.id, selectedId);
-    setSelectedId(null);
+    for (const id of selectedIds) {
+      addPlayerToLeague(league.id, id);
+    }
+    setSelectedIds(new Set());
     onOpenChange(false);
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) setSelectedId(null);
+    if (!next) setSelectedIds(new Set());
     onOpenChange(next);
   }
 
@@ -47,7 +60,7 @@ export function AddRosterMemberDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-sm" aria-describedby={undefined}>
         <DialogHeader>
-          <DialogTitle>Add player to roster</DialogTitle>
+          <DialogTitle>Add players to roster</DialogTitle>
         </DialogHeader>
 
         {available.length === 0 ? (
@@ -57,21 +70,21 @@ export function AddRosterMemberDialog({
         ) : (
           <ul className="max-h-60 overflow-y-auto divide-y divide-border rounded-md border border-border">
             {available.map((player) => {
-              const isSelected = selectedId === player.id;
+              const isSelected = selectedIds.has(player.id);
               return (
                 <li key={player.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(player.id)}
+                    onClick={() => togglePlayer(player.id)}
                     className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
                       isSelected
                         ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-muted'
                     }`}
                   >
-                    <span className="font-medium">{player.name}</span>
+                    <span className="font-medium flex-1">{player.name}</span>
                     <span
-                      className={`ml-auto rounded-full px-2 py-0.5 text-xs ${
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
                         isSelected
                           ? 'bg-primary-foreground/20 text-primary-foreground'
                           : 'bg-muted text-muted-foreground'
@@ -97,9 +110,9 @@ export function AddRosterMemberDialog({
           <Button
             type="button"
             onClick={handleAdd}
-            disabled={!selectedId || available.length === 0}
+            disabled={selectedIds.size === 0 || available.length === 0}
           >
-            Add to roster
+            Add{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -9,7 +9,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AddRosterMemberDialog } from '@/components/leagues/AddRosterMemberDialog';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
-import type { Position } from '@/types';
+import type { PositionGroup } from '@/types';
 
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -20,23 +20,19 @@ function formatDate(dateStr: string): string {
   });
 }
 
-const POSITION_LABELS: Record<Position, string> = {
-  setter: 'Set',
-  opposite: 'Opp',
-  power1: 'P1',
-  power2: 'P2',
-  middle1: 'M1',
-  middle2: 'M2',
-  libero: 'Lib',
+const POSITION_LABELS: Record<PositionGroup, string> = {
+  setter: 'Setter',
+  opposite: 'Right',
+  power: 'Power',
+  middle: 'Middle',
+  libero: 'Libero',
 };
 
-const ALL_POSITIONS: Position[] = [
+const ALL_POSITION_GROUPS: PositionGroup[] = [
   'setter',
   'opposite',
-  'power1',
-  'power2',
-  'middle1',
-  'middle2',
+  'power',
+  'middle',
   'libero',
 ];
 
@@ -69,7 +65,7 @@ export function LeagueDetailPage() {
     b.date.localeCompare(a.date),
   );
 
-  function togglePreference(playerId: string, position: Position) {
+  function togglePreference(playerId: string, position: PositionGroup) {
     const current = currentLeague.roster[playerId].preferences;
     const next = current.includes(position)
       ? current.filter((p) => p !== position)
@@ -120,7 +116,7 @@ export function LeagueDetailPage() {
                 </span>
 
                 <div className="flex flex-1 flex-wrap gap-1">
-                  {ALL_POSITIONS.map((pos) => {
+                  {ALL_POSITION_GROUPS.map((pos) => {
                     const active = preferences.includes(pos);
                     return (
                       <button

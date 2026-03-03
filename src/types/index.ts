@@ -30,9 +30,20 @@ export interface Player {
 
 // ─── League ──────────────────────────────────────────────────────────────────
 
+/**
+ * Grouped preference positions (power/middle collapse the two sub-positions).
+ * Stored on the roster entry; not the same as the court Position type.
+ */
+export type PositionGroup =
+  | 'setter'
+  | 'opposite'
+  | 'power'
+  | 'middle'
+  | 'libero';
+
 export interface LeaguePlayer {
   playerId: string;
-  preferences: Position[]; // ordered most → least preferred; may be empty
+  preferences: PositionGroup[]; // ordered most → least preferred; may be empty
 }
 
 export interface League {

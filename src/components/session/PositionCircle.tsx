@@ -5,7 +5,7 @@ import type { Player, Position } from '@/types';
 
 const POSITION_LABEL: Record<Position, string> = {
   setter: 'SE',
-  opposite: 'OP',
+  opposite: 'RT',
   power1: 'P1',
   power2: 'P2',
   middle1: 'M1',
