@@ -10,7 +10,7 @@ import {
 import { useAppStore } from '@/store/useAppStore';
 import type { League } from '@/types';
 
-const GENDER_LABEL = { female: 'F', male: 'M', other: '—' } as const;
+const GENDER_LABEL: Record<string, string> = { female: 'F', male: 'M' };
 
 interface AddRosterMemberDialogProps {
   open: boolean;

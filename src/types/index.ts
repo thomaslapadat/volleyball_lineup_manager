@@ -24,7 +24,7 @@ export const PRIMARY_POSITIONS: Position[] = [
 export interface Player {
   id: string; // crypto.randomUUID()
   name: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female';
   color: string; // hex, auto-assigned on creation
 }
 

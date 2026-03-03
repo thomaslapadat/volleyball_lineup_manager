@@ -16,7 +16,6 @@ import type { Player } from '@/types';
 const GENDER_LABEL: Record<Player['gender'], string> = {
   female: 'Female',
   male: 'Male',
-  other: 'Other',
 };
 
 const listVariants = {

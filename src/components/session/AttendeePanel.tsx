@@ -6,7 +6,6 @@ import type { Player } from '@/types';
 const GENDER_LABEL: Record<Player['gender'], string> = {
   female: 'F',
   male: 'M',
-  other: 'O',
 };
 
 interface DraggableAvatarProps {

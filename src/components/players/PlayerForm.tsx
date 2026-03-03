@@ -9,6 +9,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useAppStore } from '@/store/useAppStore';
 import type { Player } from '@/types';
 
@@ -76,23 +83,22 @@ export function PlayerForm({ open, onOpenChange, player }: PlayerFormProps) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="player-gender">Gender</Label>
-            <select
-              id="player-gender"
+            <Label>Gender</Label>
+            <Select
               value={gender}
-              onChange={(e) => {
-                setGender(e.target.value as Player['gender'] | '');
+              onValueChange={(v) => {
+                setGender(v as Player['gender']);
                 setError('');
               }}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring"
             >
-              <option value="" disabled>
-                Select gender
-              </option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="male">Male</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

@@ -60,7 +60,11 @@ export function LeagueDetailPage() {
   // Narrowed ref so closures below see a non-undefined type
   const currentLeague = league;
 
-  const rosterEntries = Object.values(currentLeague.roster);
+  const rosterEntries = Object.values(currentLeague.roster).sort((a, b) => {
+    const nameA = playersMap[a.playerId]?.name ?? '';
+    const nameB = playersMap[b.playerId]?.name ?? '';
+    return nameA.localeCompare(nameB);
+  });
   const sessionList = Object.values(currentLeague.sessions).sort((a, b) =>
     b.date.localeCompare(a.date),
   );

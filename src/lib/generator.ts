@@ -20,7 +20,7 @@ function shuffle<T>(arr: T[]): T[] {
  * Selects players to fill available slots from the candidate pool.
  *
  * Rules applied in order:
- * 1. Male players are capped at `maxMale` (female + other fill freely).
+ * 1. Male players are capped at `maxMale` (female players fill freely).
  *    Any male players beyond the cap are deferred.
  * 2. Remaining slots filled from the deferred male pool if needed.
  */

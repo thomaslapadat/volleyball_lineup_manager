@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { PencilIcon, Trash2Icon, UsersIcon } from 'lucide-react';
+import { TextCursorInputIcon, Trash2Icon } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -67,32 +67,28 @@ export function LeagueList({ onEdit }: LeagueListProps) {
                 variants={itemVariants}
                 exit="exit"
                 layout
-                className="flex items-center justify-between px-4 py-3"
+                className="flex items-center px-4 py-3"
               >
-                <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate(`/leagues/${league.id}`)}
+                  className="flex flex-1 items-center gap-3 text-left"
+                >
                   <span className="font-medium text-foreground">
                     {league.name}
                   </span>
                   <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                     {count} {count === 1 ? 'player' : 'players'}
                   </span>
-                </div>
+                </button>
                 <div className="flex gap-1">
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => navigate(`/leagues/${league.id}`)}
-                    aria-label={`Manage ${league.name} roster`}
-                  >
-                    <UsersIcon />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
                     onClick={() => onEdit(league)}
-                    aria-label={`Edit ${league.name}`}
+                    aria-label={`Rename ${league.name}`}
                   >
-                    <PencilIcon />
+                    <TextCursorInputIcon />
                   </Button>
                   <Button
                     variant="ghost"
